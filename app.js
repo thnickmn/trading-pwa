@@ -170,6 +170,7 @@
             if (symbol.includes('SI')) return 3;
             if (symbol.includes('PL')) return 2;
             if (symbol.includes('HG')) return 4;
+            if (symbol.includes('NI')) return 0;
             return 2;
         },
 
