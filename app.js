@@ -20,7 +20,7 @@
                 { symbol: 'SI=F', name: 'SI', description: 'Silver Futures', icon: '🥈' },
                 { symbol: 'PL=F', name: 'PL', description: 'Platinum Futures', icon: '⚪' },
                 { symbol: 'HG=F', name: 'HG', description: 'Copper Futures', icon: '🟤' },
-                { symbol: 'QI=F', name: 'NI', description: 'Nickel (Mini)', icon: '🔘' }
+                { symbol: 'NKD=F', name: 'NKD', description: 'Nikkei Mini Futures', icon: '🇯🇵' }
             ],
             energy: [
                 { symbol: 'CL=F', name: 'CL', description: 'Crude Oil WTI', icon: '🛢️' },
@@ -170,7 +170,7 @@
             if (symbol.includes('SI')) return 3;
             if (symbol.includes('PL')) return 2;
             if (symbol.includes('HG')) return 4;
-            if (symbol.includes('NI')) return 0;
+            if (symbol.includes('NKD')) return 0;
             return 2;
         },
 
