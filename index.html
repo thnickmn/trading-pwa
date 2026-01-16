@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="description" content="HWR Futures Pro v2.0 - Professional Trading Signals PWA">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="HWR Signals">
+
+    <title>HWR Futures Pro v2.0</title>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- App Container -->
+    <div id="app">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo">
+                    <span class="logo-icon">📊</span>
+                    <div class="logo-text">
+                        <h1>HWR Futures Pro</h1>
+                        <span class="version">v2.0</span>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button id="notificationBtn" class="icon-btn" title="Notifications">
+                        <span class="icon">🔕</span>
+                    </button>
+                    <button id="refreshBtn" class="icon-btn" title="Refresh Data">
+                        <span class="icon">🔄</span>
+                    </button>
+                    <button id="settingsBtn" class="icon-btn" title="Settings">
+                        <span class="icon">⚙️</span>
+                    </button>
+                </div>
+            </div>
+            <div class="data-warning">
+                <span class="warning-icon">⚠️</span>
+                <span>Data delayed ~15-20 minutes (Yahoo Finance)</span>
+            </div>
+        </header>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status-item">
+                <span class="status-label">Status:</span>
+                <span id="connectionStatus" class="status-value online">Online</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Last Update:</span>
+                <span id="lastUpdate" class="status-value">--:--:--</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Next Refresh:</span>
+                <span id="nextRefresh" class="status-value">--:--</span>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <nav class="tab-nav">
+            <button class="tab-btn active" data-tab="indices">📈 Indices</button>
+            <button class="tab-btn" data-tab="metals">🥇 Metals</button>
+            <button class="tab-btn" data-tab="energy">🛢️ Energy</button>
+            <button class="tab-btn" data-tab="currencies">💱 Currencies</button>
+            <button class="tab-btn" data-tab="treasuries">🏛️ Treasuries</button>
+            <button class="tab-btn" data-tab="grains">🌾 Grains</button>
+            <button class="tab-btn" data-tab="livestock">🐄 Livestock</button>
+            <button class="tab-btn" data-tab="history">History</button>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Futures Tab -->
+            <section id="indices-tab" class="tab-content active">
+                <div class="signals-grid" id="indicesSignals">
+                    <!-- Index futures signals will be rendered here -->
+                </div>
+            </section>
+
+            <!-- Metals Tab -->
+            <section id="metals-tab" class="tab-content">
+                <div class="signals-grid" id="metalsSignals">
+                    <!-- Metals signals will be rendered here -->
+                </div>
+            </section>
+
+            <!-- Energy Tab -->
+            <section id="energy-tab" class="tab-content">
+                <div class="signals-grid" id="energySignals">
+                    <!-- Energy signals will be rendered here -->
+                </div>
+            </section>
+
+            <!-- Currencies Tab -->
+            <section id="currencies-tab" class="tab-content">
+                <div class="signals-grid" id="currenciesSignals">
+                    <!-- Currency signals will be rendered here -->
+                </div>
+            </section>
+
+            <!-- Treasuries Tab -->
+            <section id="treasuries-tab" class="tab-content">
+                <div class="signals-grid" id="treasuriesSignals">
+                    <!-- Treasury signals will be rendered here -->
+                </div>
+            </section>
+
+            <!-- Grains Tab -->
+            <section id="grains-tab" class="tab-content">
+                <div class="signals-grid" id="grainsSignals">
+                    <!-- Grains signals will be rendered here -->
+                </div>
+            </section>
+
+            <!-- Livestock Tab -->
+            <section id="livestock-tab" class="tab-content">
+                <div class="signals-grid" id="livestockSignals">
+                    <!-- Livestock signals will be rendered here -->
+                </div>
+            </section>
+
+            <!-- History Tab -->
+            <section id="history-tab" class="tab-content">
+                <div class="history-header">
+                    <h2>Signal History</h2>
+                    <button id="clearHistoryBtn" class="btn-secondary">Clear History</button>
+                </div>
+                <div class="history-list" id="historyList">
+                    <!-- History items will be injected here -->
+                </div>
+            </section>
+        </main>
+
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="loading-overlay">
+            <div class="loader">
+                <div class="spinner"></div>
+                <p>Loading market data...</p>
+            </div>
+        </div>
+
+        <!-- Settings Modal -->
+        <div id="settingsModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Settings</h2>
+                    <button class="close-btn" id="closeSettings">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="setting-group">
+                        <label>Refresh Interval</label>
+                        <select id="refreshInterval">
+                            <option value="60000">1 minute</option>
+                            <option value="120000">2 minutes</option>
+                            <option value="180000" selected>3 minutes</option>
+                            <option value="300000">5 minutes</option>
+                        </select>
+                    </div>
+                    <div class="setting-group">
+                        <label>Confluence Threshold</label>
+                        <select id="confluenceThreshold">
+                            <option value="3">3+ factors (Aggressive)</option>
+                            <option value="4" selected>4+ factors (Balanced)</option>
+                            <option value="5">5+ factors (Conservative)</option>
+                        </select>
+                    </div>
+                    <div class="setting-group">
+                        <label>Risk per Trade (%)</label>
+                        <input type="number" id="riskPercent" value="1" min="0.5" max="3" step="0.5">
+                    </div>
+                    <div class="setting-group">
+                        <label>Sound Alerts</label>
+                        <label class="toggle">
+                            <input type="checkbox" id="soundAlerts" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-group">
+                        <label>Vibration Alerts</label>
+                        <label class="toggle">
+                            <input type="checkbox" id="vibrationAlerts" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- Notification Settings Section -->
+                    <div class="setting-section-header">
+                        <h3>🔔 Push Notifications</h3>
+                    </div>
+
+                    <div class="setting-group notification-permission">
+                        <label>Permission Status</label>
+                        <div class="permission-row">
+                            <span id="notificationPermissionStatus" class="permission-status status-default">Not Set</span>
+                            <button id="enableNotificationsBtn" class="btn-small">Enable Notifications</button>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>Direction Change Alerts</label>
+                        <label class="toggle">
+                            <input type="checkbox" id="notifyDirectionChange" class="notification-toggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span class="setting-hint">Alert when signal changes (LONG ↔ SHORT)</span>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>High Confluence Alerts</label>
+                        <label class="toggle">
+                            <input type="checkbox" id="notifyHighConfluence" class="notification-toggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span class="setting-hint">Alert for strong signals</span>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>High Confluence Threshold</label>
+                        <select id="highConfluenceThreshold" class="notification-toggle">
+                            <option value="4">4+ factors</option>
+                            <option value="5" selected>5+ factors</option>
+                            <option value="6">6 factors (max)</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>Price Level Alerts</label>
+                        <label class="toggle">
+                            <input type="checkbox" id="notifyPriceAlerts" class="notification-toggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span class="setting-hint">Alert when price approaches TP/SL</span>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>Notification Sound</label>
+                        <label class="toggle">
+                            <input type="checkbox" id="notificationSound" class="notification-toggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="saveSettings" class="btn-primary">Save Settings</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Signal Detail Modal -->
+        <div id="signalModal" class="modal">
+            <div class="modal-content signal-detail">
+                <div class="modal-header">
+                    <h2 id="signalModalTitle">Signal Details</h2>
+                    <button class="close-btn" id="closeSignal">&times;</button>
+                </div>
+                <div class="modal-body" id="signalModalBody">
+                    <!-- Signal details will be injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Install Prompt -->
+        <div id="installPrompt" class="install-prompt hidden">
+            <div class="install-content">
+                <span class="install-icon">📲</span>
+                <div class="install-text">
+                    <strong>Install HWR Signals</strong>
+                    <span>Add to home screen for quick access</span>
+                </div>
+                <button id="installBtn" class="btn-primary">Install</button>
+                <button id="dismissInstall" class="btn-text">Later</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Script -->
+    <script src="app.js"></script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js")
+      .then(reg => console.log("SW registered:", reg.scope))
+      .catch(err => console.log("SW registration failed:", err));
+  });
+}
+</script>
+</body>
+</html>
