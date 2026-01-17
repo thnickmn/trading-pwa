@@ -249,6 +249,8 @@
         <div class="header-top">
             <h1>📊 HWR Pro v4</h1>
             <div class="header-actions">
+                <button class="btn" id="notification-btn" title="Notifications">🔔</button>
+                <button class="btn" id="settings-btn" title="Settings">⚙️</button>
                 <button class="btn" id="clear-btn">Clear</button>
                 <button class="btn" id="refresh-btn">↻ Refresh</button>
             </div>
@@ -280,5 +282,53 @@
             navigator.serviceWorker.register('./sw.js');
         }
     </script>
+
+    <!-- Settings Panel -->
+    <div id="settings-panel" class="settings-panel hidden">
+        <div class="settings-content">
+            <div class="settings-header">
+                <h2>⚙️ Settings</h2>
+                <button id="close-settings" class="close-btn">✕</button>
+            </div>
+            <div class="settings-body">
+                <div class="setting-group">
+                    <h3>🔔 Notifications</h3>
+                    <label class="toggle">
+                        <input type="checkbox" id="notify-signals">
+                        <span>Signal Alerts (Long/Short)</span>
+                    </label>
+                    <label class="toggle">
+                        <input type="checkbox" id="notify-wins">
+                        <span>Win/Loss Alerts</span>
+                    </label>
+                    <label class="toggle">
+                        <input type="checkbox" id="notify-high-conf">
+                        <span>High Confluence Only (5+)</span>
+                    </label>
+                </div>
+                <div class="setting-group">
+                    <h3>📊 Display</h3>
+                    <label class="toggle">
+                        <input type="checkbox" id="show-history" checked>
+                        <span>Show Trade History</span>
+                    </label>
+                    <label class="toggle">
+                        <input type="checkbox" id="dark-mode" checked>
+                        <span>Dark Mode</span>
+                    </label>
+                </div>
+                <div class="setting-group">
+                    <h3>⏱️ Refresh Interval</h3>
+                    <select id="refresh-interval">
+                        <option value="60000">1 minute</option>
+                        <option value="180000" selected>3 minutes</option>
+                        <option value="300000">5 minutes</option>
+                        <option value="600000">10 minutes</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>

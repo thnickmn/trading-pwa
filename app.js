@@ -53,6 +53,164 @@
     };
 
     // ==========================================
+    // SETTINGS & NOTIFICATIONS
+    // ==========================================
+
+    const settings = {
+        notifySignals: localStorage.getItem('notifySignals') === 'true',
+        notifyWins: localStorage.getItem('notifyWins') === 'true',
+        notifyHighConf: localStorage.getItem('notifyHighConf') === 'true',
+        showHistory: localStorage.getItem('showHistory') !== 'false',
+        darkMode: localStorage.getItem('darkMode') !== 'false',
+        refreshInterval: parseInt(localStorage.getItem('refreshInterval')) || 180000
+    };
+
+    function initSettings() {
+        // Settings button
+        const settingsBtn = document.getElementById('settings-btn');
+        const settingsPanel = document.getElementById('settings-panel');
+        const closeSettings = document.getElementById('close-settings');
+
+        if (settingsBtn && settingsPanel) {
+            settingsBtn.addEventListener('click', () => {
+                settingsPanel.classList.remove('hidden');
+            });
+
+            closeSettings?.addEventListener('click', () => {
+                settingsPanel.classList.add('hidden');
+            });
+
+            settingsPanel.addEventListener('click', (e) => {
+                if (e.target === settingsPanel) {
+                    settingsPanel.classList.add('hidden');
+                }
+            });
+        }
+
+        // Load saved settings into UI
+        const notifySignals = document.getElementById('notify-signals');
+        const notifyWins = document.getElementById('notify-wins');
+        const notifyHighConf = document.getElementById('notify-high-conf');
+        const showHistory = document.getElementById('show-history');
+        const darkMode = document.getElementById('dark-mode');
+        const refreshInterval = document.getElementById('refresh-interval');
+
+        if (notifySignals) notifySignals.checked = settings.notifySignals;
+        if (notifyWins) notifyWins.checked = settings.notifyWins;
+        if (notifyHighConf) notifyHighConf.checked = settings.notifyHighConf;
+        if (showHistory) showHistory.checked = settings.showHistory;
+        if (darkMode) darkMode.checked = settings.darkMode;
+        if (refreshInterval) refreshInterval.value = settings.refreshInterval;
+
+        // Save settings on change
+        notifySignals?.addEventListener('change', (e) => {
+            settings.notifySignals = e.target.checked;
+            localStorage.setItem('notifySignals', e.target.checked);
+            if (e.target.checked) requestNotificationPermission();
+        });
+
+        notifyWins?.addEventListener('change', (e) => {
+            settings.notifyWins = e.target.checked;
+            localStorage.setItem('notifyWins', e.target.checked);
+            if (e.target.checked) requestNotificationPermission();
+        });
+
+        notifyHighConf?.addEventListener('change', (e) => {
+            settings.notifyHighConf = e.target.checked;
+            localStorage.setItem('notifyHighConf', e.target.checked);
+        });
+
+        showHistory?.addEventListener('change', (e) => {
+            settings.showHistory = e.target.checked;
+            localStorage.setItem('showHistory', e.target.checked);
+            const historyEl = document.getElementById('history');
+            if (historyEl) historyEl.style.display = e.target.checked ? 'block' : 'none';
+        });
+
+        refreshInterval?.addEventListener('change', (e) => {
+            settings.refreshInterval = parseInt(e.target.value);
+            localStorage.setItem('refreshInterval', e.target.value);
+            CONFIG.refreshInterval = settings.refreshInterval;
+        });
+    }
+
+    // Notification button
+    function initNotificationButton() {
+        const notifBtn = document.getElementById('notification-btn');
+        if (notifBtn) {
+            notifBtn.addEventListener('click', async () => {
+                const permission = await requestNotificationPermission();
+                if (permission === 'granted') {
+                    notifBtn.classList.add('active');
+                    showToast('🔔 Notifications enabled!');
+                } else {
+                    showToast('❌ Notifications blocked');
+                }
+            });
+
+            // Update button state
+            if (Notification.permission === 'granted') {
+                notifBtn.classList.add('active');
+            }
+        }
+    }
+
+    async function requestNotificationPermission() {
+        if (!('Notification' in window)) {
+            console.log('Notifications not supported');
+            return 'denied';
+        }
+        if (Notification.permission === 'granted') {
+            return 'granted';
+        }
+        return await Notification.requestPermission();
+    }
+
+    function sendNotification(title, body, tag) {
+        if (Notification.permission !== 'granted') return;
+
+        const options = {
+            body: body,
+            icon: './icon-192.png',
+            badge: './icon-192.png',
+            tag: tag || 'hwr-signal',
+            vibrate: [200, 100, 200]
+        };
+
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({
+                type: 'SHOW_NOTIFICATION',
+                title: title,
+                options: options
+            });
+        } else {
+            new Notification(title, options);
+        }
+    }
+
+    function showToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            z-index: 2000;
+            animation: fadeIn 0.3s;
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+
+
+    // ==========================================
     // STATE
     // ==========================================
     const state = {
@@ -526,6 +684,8 @@
     // ==========================================
 
     function init() {
+        initSettings();
+        initNotificationButton();
         // Request notification permission
         if ('Notification' in window && Notification.permission === 'default') {
             Notification.requestPermission();

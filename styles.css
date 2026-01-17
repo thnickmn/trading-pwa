@@ -1224,3 +1224,105 @@ body {
 #notificationBtn.granted.active {
     animation: notificationPulse 2s infinite;
 }
+
+
+/* Settings Panel */
+.settings-panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.settings-panel.hidden {
+    display: none;
+}
+
+.settings-content {
+    background: #1a1a2e;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 400px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #333;
+}
+
+.settings-header h2 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.settings-body {
+    padding: 20px;
+}
+
+.setting-group {
+    margin-bottom: 20px;
+}
+
+.setting-group h3 {
+    margin: 0 0 10px 0;
+    font-size: 0.9rem;
+    color: #888;
+}
+
+.toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    cursor: pointer;
+}
+
+.toggle input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #4caf50;
+}
+
+.toggle span {
+    font-size: 0.9rem;
+}
+
+.setting-group select {
+    width: 100%;
+    padding: 10px;
+    background: #0f0f1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    color: white;
+    font-size: 0.9rem;
+}
+
+/* Notification button pulse */
+#notification-btn.active {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}

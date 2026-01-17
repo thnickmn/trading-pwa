@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hwr-pro-v4';
+const CACHE_NAME = 'hwr-v5-hwr-pro-v4';
 const ASSETS = [
     './',
     './index.html',
@@ -31,5 +31,26 @@ self.addEventListener('fetch', e => {
     }
     e.respondWith(
         caches.match(e.request).then(r => r || fetch(e.request))
+    );
+});
+
+
+// Handle notification messages from app
+self.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
+        self.registration.showNotification(event.data.title, event.data.options);
+    }
+});
+
+// Handle notification click
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    event.waitUntil(
+        clients.matchAll({ type: 'window' }).then((clientList) => {
+            if (clientList.length > 0) {
+                return clientList[0].focus();
+            }
+            return clients.openWindow('./');
+        })
     );
 });
