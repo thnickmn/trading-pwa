@@ -268,9 +268,11 @@
     // ==========================================
 
     async function fetchData(symbol) {
-        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1h&range=5d`;
+        // Use CORS proxy for browser requests
+        const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1h&range=5d`;
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(yahooUrl)}`;
         try {
-            const response = await fetch(url);
+            const response = await fetch(proxyUrl);
             const json = await response.json();
             const result = json.chart.result[0];
             const quotes = result.indicators.quote[0];
