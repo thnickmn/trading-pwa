@@ -125,6 +125,7 @@
             localStorage.removeItem('hwr_activeTrades');
             localStorage.removeItem('hwr_previous_signals');
             localStorage.removeItem('hwr_history');
+            localStorage.setItem('hwr_firstRun', 'true');  // Flag for fresh start
             state.activeTrades = {};
             state.history = [];
             HistoryManager.previousSignals = {};
@@ -1349,8 +1350,16 @@ Price: ${utils.formatPrice(current.price, 2)}`,
             Object.entries(state.activeTrades).forEach(([symbol, trade]) => {
                 this.previousSignals[symbol] = trade.direction;
             });
-            // If no active trades, mark as first run to capture initial signals without creating trades
-            this.firstRun = Object.keys(state.activeTrades).length === 0;
+            // Check localStorage for firstRun flag (set by clearAllData)
+            const storedFirstRun = localStorage.getItem('hwr_firstRun');
+            if (storedFirstRun === 'true') {
+                this.firstRun = true;
+                localStorage.removeItem('hwr_firstRun');  // Clear the flag after reading
+                console.log('First run flag detected from localStorage - will skip initial trade creation');
+            } else {
+                // If no active trades and no previous signals, mark as first run
+                this.firstRun = Object.keys(state.activeTrades).length === 0 && Object.keys(this.previousSignals).length === 0;
+            }
             console.log('Initialized previousSignals from activeTrades:', this.previousSignals, 'firstRun:', this.firstRun);
         },
 
