@@ -198,6 +198,12 @@
             if (symbol.includes('SI')) return 3;
             if (symbol.includes('PL')) return 2;
             if (symbol.includes('HG')) return 4;
+            if (symbol.includes('6J')) return 6;  // Japanese Yen futures need 6 decimals
+            if (symbol.includes('6E')) return 5;  // Euro futures
+            if (symbol.includes('6B')) return 4;  // British Pound futures
+            if (symbol.includes('6A')) return 5;  // Australian Dollar futures
+            if (symbol.includes('6C')) return 5;  // Canadian Dollar futures
+            if (symbol.includes('6S')) return 5;  // Swiss Franc futures
             return 2;
         },
 
