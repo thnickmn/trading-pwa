@@ -566,10 +566,10 @@ function getSymbolStats(symbol) {
         async fetchQuote(symbol) {
             try {
                 // Using Yahoo Finance v8 API via CORS proxy
-                const proxyUrl = 'https://corsproxy.io/?';
+                const proxyUrl = 'https://cors.eu.org/';
                 const apiUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=15m&range=5d`;
 
-                const response = await fetch(proxyUrl + encodeURIComponent(apiUrl));
+                const response = await fetch(proxyUrl + apiUrl);
 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}`);
