@@ -53,7 +53,7 @@
         // Default settings
         defaults: {
             refreshInterval: 180000, // 3 minutes
-            confluenceThreshold: 6,
+            confluenceThreshold: 4,
             riskPercent: 1,
             soundAlerts: true,
             vibrationAlerts: true,
@@ -76,7 +76,7 @@
         },
         // Risk/Reward settings
         riskReward: {
-            tp1Multiplier: 1.0,
+            tp1Multiplier: 0.75,
             tp2Multiplier: 2.5,
             tp3Multiplier: 4.0,
             slMultiplier: 1.0
