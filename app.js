@@ -53,7 +53,7 @@
         // Default settings
         defaults: {
             refreshInterval: 180000, // 3 minutes
-            confluenceThreshold: 4,
+            confluenceThreshold: 6,
             riskPercent: 1,
             soundAlerts: true,
             vibrationAlerts: true,
@@ -63,7 +63,7 @@
             notifyHighConfluence: true,
             notifyPriceAlerts: true,
             notificationSound: true,
-            highConfluenceThreshold: 5
+            highConfluenceThreshold: 6
         },
         // Technical Analysis Parameters
         ta: {
@@ -76,7 +76,7 @@
         },
         // Risk/Reward settings
         riskReward: {
-            tp1Multiplier: 1.5,
+            tp1Multiplier: 1.0,
             tp2Multiplier: 2.5,
             tp3Multiplier: 4.0,
             slMultiplier: 1.0
