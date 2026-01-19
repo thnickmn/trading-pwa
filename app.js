@@ -1352,6 +1352,8 @@ Price: ${utils.formatPrice(current.price, 2)}`,
             });
             // Check localStorage for firstRun flag (set by clearAllData)
             const storedFirstRun = localStorage.getItem('hwr_firstRun');
+            console.log('DEBUG: storedFirstRun from localStorage:', storedFirstRun);
+            console.log('DEBUG: activeTrades count:', Object.keys(state.activeTrades).length);
             if (storedFirstRun === 'true') {
                 this.firstRun = true;
                 localStorage.removeItem('hwr_firstRun');  // Clear the flag after reading
@@ -1360,10 +1362,11 @@ Price: ${utils.formatPrice(current.price, 2)}`,
                 // If no active trades and no previous signals, mark as first run
                 this.firstRun = Object.keys(state.activeTrades).length === 0 && Object.keys(this.previousSignals).length === 0;
             }
-            console.log('Initialized previousSignals from activeTrades:', this.previousSignals, 'firstRun:', this.firstRun);
+            console.log('DEBUG: firstRun set to:', this.firstRun);
         },
 
         checkForChanges(newSignals) {
+            console.log('DEBUG checkForChanges: firstRun =', this.firstRun, 'signals count:', Object.keys(newSignals).length);
             // On first run after clear/fresh start, just capture signals without creating trades
             if (this.firstRun) {
                 Object.entries(newSignals).forEach(([symbol, item]) => {
