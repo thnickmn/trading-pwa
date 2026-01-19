@@ -87,6 +87,7 @@
     // STATE MANAGEMENT
     // ==========================================
     const state = {
+n  history: JSON.parse(localStorage.getItem('history')) || [\n    {symbol: 'ES', side: 'LONG', entryPrice: 4000, exitPrice: 4050, entryTime: '2026-01-18T10:00:00-05:00', exitTime: '2026-01-18T14:00:00-05:00'},\n    {symbol: 'NQ', side: 'SHORT', entryPrice: 15000, exitPrice: 14900, entryTime: '2026-01-18T11:00:00-05:00', exitTime: '2026-01-18T15:00:00-05:00'},\n    {symbol: 'GC', side: 'LONG', entryPrice: 2000, exitPrice: 1980, entryTime: '2026-01-18T12:00:00-05:00', exitTime: '2026-01-18T16:00:00-05:00'}\n  ],
         signals: {},
         history: [],
         settings: { ...CONFIG.defaults },
@@ -920,6 +921,16 @@
         },
 
         renderHistory() {
+            // --- WIN/LOSS STATS PATCH START ---
+            let wins = 0, losses = 0;
+            state.history.forEach(item => {
+                if (item.result === "win") wins++;
+                else if (item.result === "loss") losses++;
+            });
+            const total = wins + losses;
+            const winPct = total > 0 ? ((wins / total) * 100).toFixed(1) : "-";
+            const statsHtml = `<div class="history-stats" style="font-size:0.95em;padding:4px 0 8px 0;color:#888;text-align:left;">Win: <b style="color:#3c6">${wins}</b> renderHistory() {nbsp; Loss: <b style="color:#c33">${losses}</b> renderHistory() {nbsp; Win%: <b>${winPct}</b></div>`;
+            // --- WIN/LOSS STATS PATCH END ---
             if (state.history.length === 0) {
                 DOM.historyList.innerHTML = `
                     <div class="history-empty">
@@ -945,7 +956,7 @@
                 })
                 .join('');
 
-            DOM.historyList.innerHTML = historyHtml;
+            DOM.historyList.innerHTML = statsHtml + historyHtml;
         },
 
         updateStatus() {
