@@ -1,0 +1,187 @@
+// HWR Futures Pro v4.2 - FIXED SIGNAL LOGIC
+// Signal on EMA Crossover + Full Confluence (matches 71% backtest)
+// Settings: Min Confluence 6/6, SL 1.0 ATR, TP 1.0 ATR
+
+//@version=5
+indicator("HWR Futures Pro v4.2 - Fixed", overlay=true, max_labels_count=500)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════════════════════════════════════════
+group_main = "Main Settings"
+showSuperTrend = input.bool(false, "Show SuperTrend", group=group_main)
+showSignals = input.bool(true, "Show Entry Signals", group=group_main)
+showLevels = input.bool(true, "Show TP/SL Levels", group=group_main)
+showPanel = input.bool(true, "Show Info Panel", group=group_main)
+showHistory = input.bool(true, "Show Win/Loss Labels", group=group_main)
+
+group_risk = "Risk Management"
+minConfluence = input.int(6, "Min Confluence (6 = Full)", minval=4, maxval=6, group=group_risk)
+slMultiplier = input.float(1.0, "Stop Loss (ATR)", minval=0.5, maxval=3.0, step=0.25, group=group_risk)
+tpMultiplier = input.float(1.0, "Take Profit (ATR)", minval=0.5, maxval=3.0, step=0.25, group=group_risk)
+
+group_ta = "Technical Analysis"
+emaFast = input.int(9, "EMA Fast", group=group_ta)
+emaMid = input.int(21, "EMA Mid", group=group_ta)
+emaSlow = input.int(50, "EMA Slow", group=group_ta)
+atrPeriod = input.int(14, "ATR Period", group=group_ta)
+rsiPeriod = input.int(14, "RSI Period", group=group_ta)
+stPeriod = input.int(10, "SuperTrend Period", group=group_ta)
+stMultiplier = input.float(3.0, "SuperTrend Multiplier", group=group_ta)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INDICATORS
+// ═══════════════════════════════════════════════════════════════════════════════
+ema9 = ta.ema(close, emaFast)
+ema21 = ta.ema(close, emaMid)
+ema50 = ta.ema(close, emaSlow)
+atr = ta.atr(atrPeriod)
+rsi = ta.rsi(close, rsiPeriod)
+[macdLine, signalLine, _] = ta.macd(close, 12, 26, 9)
+volSMA = ta.sma(volume, 20)
+
+// SuperTrend
+[stValue, stDir] = ta.supertrend(stMultiplier, stPeriod)
+stBullish = stDir < 0
+
+// EMA Crossovers (PRIMARY SIGNAL TRIGGER)
+emaBullCross = ta.crossover(ema9, ema21)
+emaBearCross = ta.crossunder(ema9, ema21)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CONFLUENCE SCORING (6 FACTORS)
+// ═══════════════════════════════════════════════════════════════════════════════
+bullScore = 0
+bearScore = 0
+
+// Factor 1: EMA Alignment (9 > 21 > 50)
+bullScore += (ema9 > ema21 and ema21 > ema50) ? 1 : 0
+bearScore += (ema9 < ema21 and ema21 < ema50) ? 1 : 0
+
+// Factor 2: Price vs EMA21
+bullScore += close > ema21 ? 1 : 0
+bearScore += close < ema21 ? 1 : 0
+
+// Factor 3: RSI in favorable zone
+bullScore += (rsi > 50 and rsi < 70) ? 1 : 0
+bearScore += (rsi < 50 and rsi > 30) ? 1 : 0
+
+// Factor 4: MACD direction
+bullScore += macdLine > signalLine ? 1 : 0
+bearScore += macdLine < signalLine ? 1 : 0
+
+// Factor 5: Volume confirmation
+bullScore += volume > volSMA ? 1 : 0
+bearScore += volume > volSMA ? 1 : 0
+
+// Factor 6: SuperTrend direction
+bullScore += stBullish ? 1 : 0
+bearScore += not stBullish ? 1 : 0
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SIGNALS - EMA CROSSOVER + FULL CONFLUENCE (FIXED LOGIC)
+// ═══════════════════════════════════════════════════════════════════════════════
+// Signal triggers on EMA crossover ONLY when confluence is met
+longSignal = emaBullCross and bullScore >= minConfluence
+shortSignal = emaBearCross and bearScore >= minConfluence
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TRADE TRACKING
+// ═══════════════════════════════════════════════════════════════════════════════
+var float entryPrice = na
+var float stopLoss = na
+var float takeProfit = na
+var bool inLong = false
+var bool inShort = false
+var int wins = 0
+var int losses = 0
+
+// Entry Logic - Only enter if not already in a trade
+if longSignal and not inLong and not inShort
+    entryPrice := close
+    stopLoss := close - (atr * slMultiplier)
+    takeProfit := close + (atr * tpMultiplier)
+    inLong := true
+    inShort := false
+
+if shortSignal and not inShort and not inLong
+    entryPrice := close
+    stopLoss := close + (atr * slMultiplier)
+    takeProfit := close - (atr * tpMultiplier)
+    inShort := true
+    inLong := false
+
+// Exit Logic - Long Trades
+if inLong
+    if high >= takeProfit
+        wins += 1
+        if showHistory
+            label.new(bar_index, takeProfit, "✓", color=color.new(color.green, 20), textcolor=color.white, style=label.style_label_down, size=size.tiny)
+        entryPrice := na
+        stopLoss := na
+        takeProfit := na
+        inLong := false
+    else if low <= stopLoss
+        losses += 1
+        if showHistory
+            label.new(bar_index, stopLoss, "✗", color=color.new(color.red, 20), textcolor=color.white, style=label.style_label_up, size=size.tiny)
+        entryPrice := na
+        stopLoss := na
+        takeProfit := na
+        inLong := false
+
+// Exit Logic - Short Trades
+if inShort
+    if low <= takeProfit
+        wins += 1
+        if showHistory
+            label.new(bar_index, takeProfit, "✓", color=color.new(color.green, 20), textcolor=color.white, style=label.style_label_up, size=size.tiny)
+        entryPrice := na
+        stopLoss := na
+        takeProfit := na
+        inShort := false
+    else if high >= stopLoss
+        losses += 1
+        if showHistory
+            label.new(bar_index, stopLoss, "✗", color=color.new(color.red, 20), textcolor=color.white, style=label.style_label_down, size=size.tiny)
+        entryPrice := na
+        stopLoss := na
+        takeProfit := na
+        inShort := false
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PLOTTING
+// ═══════════════════════════════════════════════════════════════════════════════
+plot(showSuperTrend ? stValue : na, "SuperTrend", color=stBullish ? color.green : color.red, linewidth=2)
+
+plotshape(showSignals and longSignal, "Long", shape.triangleup, location.belowbar, color.new(color.green, 0), size=size.normal)
+plotshape(showSignals and shortSignal, "Short", shape.triangledown, location.abovebar, color.new(color.red, 0), size=size.normal)
+
+plot(showLevels and (inLong or inShort) ? takeProfit : na, "TP", color=color.new(color.green, 0), style=plot.style_linebr, linewidth=2)
+plot(showLevels and (inLong or inShort) ? stopLoss : na, "SL", color=color.new(color.red, 0), style=plot.style_linebr, linewidth=2)
+plot(showLevels and (inLong or inShort) ? entryPrice : na, "Entry", color=color.new(color.blue, 0), style=plot.style_linebr, linewidth=1)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INFO PANEL
+// ═══════════════════════════════════════════════════════════════════════════════
+if showPanel and barstate.islast
+    totalTrades = wins + losses
+    winRate = totalTrades > 0 ? (wins / totalTrades) * 100 : 0
+    status = inLong ? "LONG" : inShort ? "SHORT" : "FLAT"
+    statusColor = inLong ? color.green : inShort ? color.red : color.gray
+
+    var table infoPanel = table.new(position.top_right, 2, 4, bgcolor=color.new(color.black, 80), border_width=1)
+    table.cell(infoPanel, 0, 0, "Status", text_color=color.gray, text_size=size.small)
+    table.cell(infoPanel, 1, 0, status, text_color=statusColor, text_size=size.small)
+    table.cell(infoPanel, 0, 1, "Score", text_color=color.gray, text_size=size.small)
+    table.cell(infoPanel, 1, 1, str.tostring(math.max(bullScore, bearScore)) + "/6", text_color=color.white, text_size=size.small)
+    table.cell(infoPanel, 0, 2, "Wins", text_color=color.gray, text_size=size.small)
+    table.cell(infoPanel, 1, 2, str.tostring(wins), text_color=color.green, text_size=size.small)
+    table.cell(infoPanel, 0, 3, "Losses", text_color=color.gray, text_size=size.small)
+    table.cell(infoPanel, 1, 3, str.tostring(losses), text_color=color.red, text_size=size.small)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ALERTS
+// ═══════════════════════════════════════════════════════════════════════════════
+alertcondition(longSignal, "Long Entry", "HWR LONG - EMA Cross + 6/6 Confluence")
+alertcondition(shortSignal, "Short Entry", "HWR SHORT - EMA Cross + 6/6 Confluence")
