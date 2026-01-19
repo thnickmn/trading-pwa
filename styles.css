@@ -1255,3 +1255,89 @@ body {
 .symbol-stats:not(:empty) {
     color: #4CAF50;
 }
+
+
+/* Enhanced History Items with Entry/Exit Times */
+.history-item {
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    background: var(--bg-secondary);
+    border-left: 3px solid var(--text-muted);
+}
+
+.history-item.long {
+    border-left-color: var(--success);
+}
+
+.history-item.short {
+    border-left-color: var(--danger);
+}
+
+.history-item.win {
+    background: rgba(76, 175, 80, 0.1);
+}
+
+.history-item.loss {
+    background: rgba(244, 67, 54, 0.1);
+}
+
+.history-main {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.history-symbol {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.history-signal {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.history-signal.long {
+    background: rgba(76, 175, 80, 0.2);
+    color: var(--success);
+}
+
+.history-signal.short {
+    background: rgba(244, 67, 54, 0.2);
+    color: var(--danger);
+}
+
+.history-result {
+    margin-left: auto;
+    font-size: 1rem;
+}
+
+.history-times {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.history-entry, .history-exit {
+    font-family: monospace;
+}
+
+
+/* Entry Time Display */
+.level-group.entry-time {
+    margin-top: 4px;
+}
+
+.level-value.time {
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: var(--accent-primary);
+}

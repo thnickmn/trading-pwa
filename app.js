@@ -89,6 +89,7 @@
     const state = {
         signals: {},
         history: [],
+        activeTrades: {},  // Track active trades with entry time
         settings: { ...CONFIG.defaults },
         lastUpdate: null,
         refreshTimer: null,
@@ -704,7 +705,7 @@
                             ${this.renderIndicator('Vol', signal.indicators.volume?.signal)}
                         </div>
 
-                        ${signal.direction !== 'NEUTRAL' ? this.renderLevels(signal.levels, decimals) : ''}
+                        ${signal.direction !== 'NEUTRAL' ? this.renderLevels(signal.levels, decimals, symbol) : ''}
                     </div>
                 </div>
             `;
@@ -730,14 +731,24 @@
             return 'neutral';
         },
 
-        renderLevels(levels, decimals) {
+        renderLevels(levels, decimals, symbol) {
             if (!levels.sl) return '';
+
+            // Get entry time from active trade if exists
+            const activeTrade = state.activeTrades[symbol];
+            const entryTimeStr = activeTrade && activeTrade.entryTime 
+                ? utils.formatDateTime(new Date(activeTrade.entryTime))
+                : 'Pending...';
 
             return `
                 <div class="levels-section">
                     <div class="level-group entry">
                         <div class="level-label">Entry Price</div>
                         <div class="level-value entry">${utils.formatPrice(levels.entry, decimals)}</div>
+                    </div>
+                    <div class="level-group entry-time">
+                        <div class="level-label">Entry Time</div>
+                        <div class="level-value time">${entryTimeStr}</div>
                     </div>
                     <div class="level-group">
                         <div class="level-label">Take Profit</div>
@@ -947,12 +958,23 @@
                 .slice(0, 50)
                 .map(item => {
                     const decimals = utils.getDecimals(item.symbol);
+                    const entryTime = item.entryTime ? utils.formatDateTime(new Date(item.entryTime)) : '--';
+                    const exitTime = item.exitTime ? utils.formatDateTime(new Date(item.exitTime)) : '--';
+                    const entryPrice = item.entryPrice ? utils.formatPrice(item.entryPrice, decimals) : utils.formatPrice(item.price, decimals);
+                    const exitPrice = item.exitPrice ? utils.formatPrice(item.exitPrice, decimals) : '--';
+                    const resultClass = item.result === 'win' ? 'win' : (item.result === 'loss' ? 'loss' : '');
+                    const resultIcon = item.result === 'win' ? '✅' : (item.result === 'loss' ? '❌' : '');
                     return `
-                        <div class="history-item ${item.direction.toLowerCase()}">
-                            <span class="history-time">${utils.formatDateTime(new Date(item.timestamp))}</span>
-                            <span class="history-symbol">${item.name}</span>
-                            <span class="history-signal ${item.direction.toLowerCase()}">${item.direction}</span>
-                            <span class="history-price">${utils.formatPrice(item.price, decimals)}</span>
+                        <div class="history-item ${item.direction.toLowerCase()} ${resultClass}">
+                            <div class="history-main">
+                                <span class="history-symbol">${item.name}</span>
+                                <span class="history-signal ${item.direction.toLowerCase()}">${item.direction}</span>
+                                <span class="history-result">${resultIcon}</span>
+                            </div>
+                            <div class="history-times">
+                                <span class="history-entry">Entry: ${entryTime} @ ${entryPrice}</span>
+                                <span class="history-exit">Exit: ${exitTime} @ ${exitPrice}</span>
+                            </div>
                         </div>
                     `;
                 })
@@ -1288,24 +1310,57 @@ Price: ${utils.formatPrice(current.price, 2)}`,
             Object.entries(newSignals).forEach(([symbol, item]) => {
                 const prevDirection = this.previousSignals[symbol];
                 const newDirection = item.signal.direction;
+                const now = new Date();
 
-                if (prevDirection && prevDirection !== newDirection && newDirection !== 'NEUTRAL') {
-                    this.addToHistory(item);
+                // Check if entering a new trade
+                if (newDirection !== 'NEUTRAL' && prevDirection !== newDirection) {
+                    // If there was a previous active trade, close it first
+                    if (state.activeTrades[symbol]) {
+                        this.closeTrade(symbol, item, now);
+                    }
+                    // Start new trade
+                    state.activeTrades[symbol] = {
+                        symbol: symbol,
+                        name: item.name,
+                        direction: newDirection,
+                        entryPrice: item.signal.price,
+                        entryTime: now.toISOString(),
+                        levels: item.signal.levels
+                    };
                     this.notifyUser(item);
+                }
+                // Check if exiting a trade (going to NEUTRAL or opposite direction)
+                else if (state.activeTrades[symbol] && 
+                         (newDirection === 'NEUTRAL' || newDirection !== state.activeTrades[symbol].direction)) {
+                    this.closeTrade(symbol, item, now);
                 }
 
                 this.previousSignals[symbol] = newDirection;
             });
         },
 
-        addToHistory(item) {
+        closeTrade(symbol, item, exitTime) {
+            const trade = state.activeTrades[symbol];
+            if (!trade) return;
+
+            const exitPrice = item.signal.price;
+            const pnl = trade.direction === 'LONG' 
+                ? exitPrice - trade.entryPrice 
+                : trade.entryPrice - exitPrice;
+            const isWin = pnl > 0;
+
+            // Add to history with entry and exit times
             state.history.unshift({
-                symbol: item.symbol,
-                name: item.name,
-                direction: item.signal.direction,
-                price: item.signal.price,
-                confluenceScore: item.signal.confluenceScore,
-                timestamp: new Date().toISOString()
+                symbol: trade.symbol,
+                name: trade.name,
+                direction: trade.direction,
+                entryPrice: trade.entryPrice,
+                exitPrice: exitPrice,
+                entryTime: trade.entryTime,
+                exitTime: exitTime.toISOString(),
+                pnl: pnl,
+                result: isWin ? 'win' : 'loss',
+                confluenceScore: item.signal.confluenceScore
             });
 
             // Keep only last 100 entries
@@ -1313,9 +1368,14 @@ Price: ${utils.formatPrice(current.price, 2)}`,
                 state.history = state.history.slice(0, 100);
             }
 
+            // Remove from active trades
+            delete state.activeTrades[symbol];
+
             this.saveHistory();
             UI.renderHistory();
         },
+
+
 
         notifyUser(item) {
             // Sound alert
