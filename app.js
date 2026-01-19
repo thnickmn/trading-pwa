@@ -1327,6 +1327,7 @@ Price: ${utils.formatPrice(current.price, 2)}`,
                         entryTime: now.toISOString(),
                         levels: item.signal.levels
                     };
+                    saveActiveTrades();  // Persist to localStorage
                     this.notifyUser(item);
                 }
                 // Check if exiting a trade (going to NEUTRAL or opposite direction)
@@ -1370,6 +1371,7 @@ Price: ${utils.formatPrice(current.price, 2)}`,
 
             // Remove from active trades
             delete state.activeTrades[symbol];
+            saveActiveTrades();  // Persist to localStorage
 
             this.saveHistory();
             UI.renderHistory();
