@@ -1343,14 +1343,28 @@ Price: ${utils.formatPrice(current.price, 2)}`,
         previousSignals: {},
 
         // Initialize previousSignals from activeTrades to prevent re-triggering on refresh
+        firstRun: true,  // Flag to skip trade creation on first data fetch
+
         init() {
             Object.entries(state.activeTrades).forEach(([symbol, trade]) => {
                 this.previousSignals[symbol] = trade.direction;
             });
-            console.log('Initialized previousSignals from activeTrades:', this.previousSignals);
+            // If no active trades, mark as first run to capture initial signals without creating trades
+            this.firstRun = Object.keys(state.activeTrades).length === 0;
+            console.log('Initialized previousSignals from activeTrades:', this.previousSignals, 'firstRun:', this.firstRun);
         },
 
         checkForChanges(newSignals) {
+            // On first run after clear/fresh start, just capture signals without creating trades
+            if (this.firstRun) {
+                Object.entries(newSignals).forEach(([symbol, item]) => {
+                    this.previousSignals[symbol] = item.signal.direction;
+                });
+                this.firstRun = false;
+                console.log('First run: captured initial signals without creating trades');
+                return;
+            }
+
             Object.entries(newSignals).forEach(([symbol, item]) => {
                 const prevDirection = this.previousSignals[symbol];
                 const newDirection = item.signal.direction;
