@@ -103,6 +103,22 @@
         priceAlerts: {}
     };
 
+    // Load active trades from localStorage on init
+    const savedActiveTrades = localStorage.getItem('hwr_activeTrades');
+    if (savedActiveTrades) {
+        try {
+            state.activeTrades = JSON.parse(savedActiveTrades);
+            console.log('Loaded activeTrades from localStorage:', state.activeTrades);
+        } catch (e) {
+            console.error('Failed to parse activeTrades:', e);
+        }
+    }
+
+    // Function to save active trades to localStorage
+    function saveActiveTrades() {
+        localStorage.setItem('hwr_activeTrades', JSON.stringify(state.activeTrades));
+    }
+
     // Helper function to get win/loss stats for a symbol
     function getSymbolStats(symbol) {
         const trades = (state.history || []).filter(t => t.symbol === symbol);
