@@ -101,14 +101,16 @@
         notificationPermission: 'default',
         priceAlerts: {}
     };
-function getSymbolStats(symbol) {
-    const trades = (state.history || []).filter(t => t.symbol === symbol);
-    const wins = trades.filter(t => t.result === 'win').length;
-    const losses = trades.filter(t => t.result === 'loss').length;
-    const total = wins + losses;
-    const winPct = total ? Math.round((wins / total) * 100) : 0;
-    return { wins, losses, winPct };
-}
+
+    // Helper function to get win/loss stats for a symbol
+    function getSymbolStats(symbol) {
+        const trades = (state.history || []).filter(t => t.symbol === symbol);
+        const wins = trades.filter(t => t.result === 'win').length;
+        const losses = trades.filter(t => t.result === 'loss').length;
+        const total = wins + losses;
+        const winPct = total ? Math.round((wins / total) * 100) : 0;
+        return { wins, losses, winPct };
+    }
 
 
     // ==========================================
