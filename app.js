@@ -639,6 +639,20 @@
     // UI RENDERER
     // ==========================================
     const UI = {
+
+        // Computes wins, losses, and win percentage for a symbol
+        function getSymbolStats(symbol) {
+            const trades = state.history.filter(t => t.symbol === symbol);
+            let wins = 0, losses = 0;
+            trades.forEach(t => {
+                if (t.result === 'win') wins++;
+                else if (t.result === 'loss') losses++;
+            });
+            const total = wins + losses;
+            const winPct = total ? ((wins / total) * 100).toFixed(1) : '–';
+            return { wins, losses, winPct };
+        }
+
         renderSignalCard(item) {
             const { symbol, name, description, icon, signal, data } = item;
             const decimals = utils.getDecimals(symbol);
