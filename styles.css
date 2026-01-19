@@ -1242,3 +1242,16 @@ body {
   background: #232526 !important;
   color: #e3e3e3 !important;
 }
+
+
+/* Win/Loss Stats on Cards */
+.symbol-stats {
+    font-size: 0.7rem;
+    color: #888;
+    margin-top: 2px;
+    font-weight: 500;
+}
+
+.symbol-stats:not(:empty) {
+    color: #4CAF50;
+}

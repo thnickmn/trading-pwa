@@ -658,6 +658,7 @@ function getSymbolStats(symbol) {
             if (confluencePercent >= 70) confluenceClass = 'strong';
             else if (confluencePercent >= 50) confluenceClass = 'moderate';
 
+            const stats = getSymbolStats(symbol);
             return `
                 <div class="signal-card ${directionClass}" data-symbol="${symbol}">
                     <div class="card-header">
@@ -666,6 +667,7 @@ function getSymbolStats(symbol) {
                             <div>
                                 <div class="symbol-name">${name}</div>
                                 <div class="symbol-desc">${description}</div>
+                                <div class="symbol-stats">${stats.wins}W / ${stats.losses}L ${stats.winPct}%</div>
                             </div>
                         </div>
                         <span class="signal-badge ${directionClass}">${signal.direction}</span>
