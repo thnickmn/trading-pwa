@@ -1328,6 +1328,14 @@ Price: ${utils.formatPrice(current.price, 2)}`,
     const HistoryManager = {
         previousSignals: {},
 
+        // Initialize previousSignals from activeTrades to prevent re-triggering on refresh
+        init() {
+            Object.entries(state.activeTrades).forEach(([symbol, trade]) => {
+                this.previousSignals[symbol] = trade.direction;
+            });
+            console.log('Initialized previousSignals from activeTrades:', this.previousSignals);
+        },
+
         checkForChanges(newSignals) {
             Object.entries(newSignals).forEach(([symbol, item]) => {
                 const prevDirection = this.previousSignals[symbol];
@@ -1742,6 +1750,7 @@ Price: ${utils.formatPrice(current.price, 2)}`,
     // INITIALIZE APP
     // ==========================================
     document.addEventListener('DOMContentLoaded', () => {
+        HistoryManager.init();  // Initialize previousSignals from persisted activeTrades
         App.init();
     });
 
