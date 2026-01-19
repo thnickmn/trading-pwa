@@ -699,6 +699,7 @@
             else if (confluencePercent >= 50) confluenceClass = 'moderate';
 
             const stats = getSymbolStats(symbol);
+            const isActiveTrade = !!state.activeTrades[symbol];
             return `
                 <div class="signal-card ${directionClass}" data-symbol="${symbol}">
                     <div class="card-header">
@@ -710,7 +711,10 @@
                                 <div class="symbol-stats">${stats.wins}W / ${stats.losses}L ${stats.winPct}%</div>
                             </div>
                         </div>
-                        <span class="signal-badge ${directionClass}">${signal.direction}</span>
+                        <div class="badge-container">
+                            ${isActiveTrade ? '<span class="active-badge">📍 ACTIVE</span>' : ''}
+                            <span class="signal-badge ${directionClass}">${signal.direction}</span>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div class="price-row">
@@ -771,11 +775,15 @@
         renderLevels(levels, decimals, symbol) {
             if (!levels.sl) return '';
 
-            // Get entry time from active trade if exists
+            // OPTION B: Only show levels if there's an active trade
             const activeTrade = state.activeTrades[symbol];
-            const entryTimeStr = activeTrade && activeTrade.entryTime 
+            if (!activeTrade) {
+                return '';  // Hide levels when no active trade
+            }
+
+            const entryTimeStr = activeTrade.entryTime
                 ? utils.formatDateTime(new Date(activeTrade.entryTime))
-                : 'Pending...';
+                : 'Just entered';
 
             return `
                 <div class="levels-section">
