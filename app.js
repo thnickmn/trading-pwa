@@ -638,20 +638,1014 @@
     // ==========================================
     // UI RENDERER
     // ==========================================
-    
-// Computes wins, losses, and win percentage for a symbol
-function getSymbolStats(symbol) {
-    const trades = state.history.filter(t => t.symbol === symbol);
-    let wins = 0, losses = 0;
-    trades.forEach(t => {
-        if (t.result === 'win') wins++;
-        else if (t.result === 'loss') losses++;
+    const UI = {
+        renderSignalCard(item) {
+            const { symbol, name, description, icon, signal, data } = item;
+            const decimals = utils.getDecimals(symbol);
+            const directionClass = signal.direction.toLowerCase();
+
+            const confluencePercent = (signal.confluenceScore / signal.totalFactors) * 100;
+            let confluenceClass = 'weak';
+            if (confluencePercent >= 70) confluenceClass = 'strong';
+            else if (confluencePercent >= 50) confluenceClass = 'moderate';
+
+            return `
+                <div class="signal-card ${directionClass}" data-symbol="${symbol}">
+                    <div class="card-header">
+                        <div class="symbol-info">
+                            <span class="symbol-icon">${icon}</span>
+                            <div>
+                                <div class="symbol-name">${name}</div>
+                                <div class="symbol-desc">${description}</div>
+                            </div>
+                        </div>
+                        <span class="signal-badge ${directionClass}">${signal.direction}</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="price-row">
+                            <span class="current-price">${utils.formatPrice(signal.price, decimals)}</span>
+                            <div class="price-change">
+                                <span class="change-value ${signal.change >= 0 ? 'positive' : 'negative'}">
+                                    ${signal.change >= 0 ? '+' : ''}${utils.formatPrice(signal.change, decimals)}
+                                </span>
+                                <span class="change-percent">${utils.formatPercent(signal.changePercent)}</span>
+                            </div>
+                        </div>
+
+                        <div class="confluence-section">
+                            <div class="confluence-header">
+                                <span class="confluence-label">Confluence</span>
+                                <span class="confluence-score">${signal.confluenceScore}/${signal.totalFactors}</span>
+                            </div>
+                            <div class="confluence-bar">
+                                <div class="confluence-fill ${confluenceClass}" style="width: ${confluencePercent}%"></div>
+                            </div>
+                        </div>
+
+                        <div class="indicators-grid">
+                            ${this.renderIndicator('EMA', signal.indicators.ema?.signal)}
+                            ${this.renderIndicator('RSI', signal.indicators.rsi, this.getRSISignal(signal.indicators.rsi))}
+                            ${this.renderIndicator('MACD', signal.indicators.macd?.histogram > 0 ? '▲' : '▼', signal.indicators.macd?.histogram > 0 ? 'bullish' : 'bearish')}
+                            ${this.renderIndicator('SuperT', signal.indicators.supertrend?.trend)}
+                            ${this.renderIndicator('ADX', signal.indicators.adx?.adx?.toFixed(0), signal.indicators.adx?.trending ? 'bullish' : 'neutral')}
+                            ${this.renderIndicator('Vol', signal.indicators.volume?.signal)}
+                        </div>
+
+                        ${signal.direction !== 'NEUTRAL' ? this.renderLevels(signal.levels, decimals) : ''}
+                    </div>
+                </div>
+            `;
+        },
+
+        renderIndicator(name, value, signal = null) {
+            const displayValue = value || '--';
+            const signalClass = signal || (typeof value === 'string' ? value : 'neutral');
+
+            return `
+                <div class="indicator-item">
+                    <span class="indicator-name">${name}</span>
+                    <span class="indicator-value ${signalClass}">${displayValue}</span>
+                </div>
+            `;
+        },
+
+        getRSISignal(rsi) {
+            if (!rsi || rsi === '--') return 'neutral';
+            const value = parseFloat(rsi);
+            if (value < 30) return 'bullish';
+            if (value > 70) return 'bearish';
+            return 'neutral';
+        },
+
+        renderLevels(levels, decimals) {
+            if (!levels.sl) return '';
+
+            return `
+                <div class="levels-section">
+                    <div class="level-group entry">
+                        <div class="level-label">Entry Price</div>
+                        <div class="level-value entry">${utils.formatPrice(levels.entry, decimals)}</div>
+                    </div>
+                    <div class="level-group">
+                        <div class="level-label">Take Profit</div>
+                        <div class="tp-levels">
+                            <div class="tp-item">
+                                <span class="tp-label">TP1:</span>
+                                <span class="level-value tp">${utils.formatPrice(levels.tp1, decimals)}</span>
+                            </div>
+                            <div class="tp-item">
+                                <span class="tp-label">TP2:</span>
+                                <span class="level-value tp">${utils.formatPrice(levels.tp2, decimals)}</span>
+                            </div>
+                            <div class="tp-item">
+                                <span class="tp-label">TP3:</span>
+                                <span class="level-value tp">${utils.formatPrice(levels.tp3, decimals)}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="level-group">
+                        <div class="level-label">Stop Loss</div>
+                        <div class="level-value sl">${utils.formatPrice(levels.sl, decimals)}</div>
+                    </div>
+                </div>
+            `;
+        },
+
+        renderSignals() {
+            // Render futures
+            // Render indices
+            const indicesHtml = CONFIG.symbols.indices
+                .map(item => this.renderSignalCard(state.signals[item.symbol]))
+                .join('');
+            if (DOM.indicesSignals) DOM.indicesSignals.innerHTML = indicesHtml;
+            if (DOM.futuresSignals) DOM.futuresSignals.innerHTML = indicesHtml; // fallback
+
+            // Render metals
+            const metalsHtml = CONFIG.symbols.metals
+                .map(item => this.renderSignalCard(state.signals[item.symbol]))
+                .join('');
+            if (DOM.metalsSignals) DOM.metalsSignals.innerHTML = metalsHtml;
+
+            // Render energy
+            const energyHtml = CONFIG.symbols.energy
+                .map(item => this.renderSignalCard(state.signals[item.symbol]))
+                .join('');
+            if (DOM.energySignals) DOM.energySignals.innerHTML = energyHtml;
+
+            // Render currencies
+            const currenciesHtml = CONFIG.symbols.currencies
+                .map(item => this.renderSignalCard(state.signals[item.symbol]))
+                .join('');
+            if (DOM.currenciesSignals) DOM.currenciesSignals.innerHTML = currenciesHtml;
+
+            // Render treasuries
+            const treasuriesHtml = CONFIG.symbols.treasuries
+                .map(item => this.renderSignalCard(state.signals[item.symbol]))
+                .join('');
+            if (DOM.treasuriesSignals) DOM.treasuriesSignals.innerHTML = treasuriesHtml;
+
+            // Render grains
+            const grainsHtml = CONFIG.symbols.grains
+                .map(item => this.renderSignalCard(state.signals[item.symbol]))
+                .join('');
+            if (DOM.grainsSignals) DOM.grainsSignals.innerHTML = grainsHtml;
+
+            // Render livestock
+            const livestockHtml = CONFIG.symbols.livestock
+                .map(item => this.renderSignalCard(state.signals[item.symbol]))
+                .join('');
+            if (DOM.livestockSignals) DOM.livestockSignals.innerHTML = livestockHtml;
+
+            // Add click handlers
+            document.querySelectorAll('.signal-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const symbol = card.dataset.symbol;
+                    this.showSignalDetail(symbol);
+                });
+            });
+        },
+
+        showSignalDetail(symbol) {
+            const item = state.signals[symbol];
+            if (!item) return;
+
+            const { signal, name, description } = item;
+            const decimals = utils.getDecimals(symbol);
+
+            DOM.signalModalTitle.textContent = `${name} - ${description}`;
+
+            DOM.signalModalBody.innerHTML = `
+                <div class="detail-section">
+                    <h3>Signal Overview</h3>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Direction</span>
+                            <span class="detail-value" style="color: var(--${signal.direction === 'LONG' ? 'success' : signal.direction === 'SHORT' ? 'danger' : 'neutral-color'})">
+                                ${signal.direction}
+                            </span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Confidence</span>
+                            <span class="detail-value">${signal.confidence.toUpperCase()}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Confluence</span>
+                            <span class="detail-value">${signal.confluenceScore}/${signal.totalFactors}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Current Price</span>
+                            <span class="detail-value">${utils.formatPrice(signal.price, decimals)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h3>Technical Indicators</h3>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">EMA Stack</span>
+                            <span class="detail-value">${signal.indicators.ema?.signal || '--'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">RSI (14)</span>
+                            <span class="detail-value">${signal.indicators.rsi}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">MACD Histogram</span>
+                            <span class="detail-value">${signal.indicators.macd?.histogram?.toFixed(2) || '--'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">SuperTrend</span>
+                            <span class="detail-value">${signal.indicators.supertrend?.trend || '--'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">ADX</span>
+                            <span class="detail-value">${signal.indicators.adx?.adx?.toFixed(1) || '--'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">ATR</span>
+                            <span class="detail-value">${signal.indicators.atr?.toFixed(decimals) || '--'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                ${signal.direction !== 'NEUTRAL' ? `
+                <div class="detail-section">
+                    <h3>Trade Levels</h3>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Entry</span>
+                            <span class="detail-value" style="color: var(--accent-primary)">${utils.formatPrice(signal.levels.entry, decimals)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Stop Loss</span>
+                            <span class="detail-value" style="color: var(--danger)">${utils.formatPrice(signal.levels.sl, decimals)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">TP1 (1.5R)</span>
+                            <span class="detail-value" style="color: var(--success)">${utils.formatPrice(signal.levels.tp1, decimals)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">TP2 (2.5R)</span>
+                            <span class="detail-value" style="color: var(--success)">${utils.formatPrice(signal.levels.tp2, decimals)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">TP3 (4R)</span>
+                            <span class="detail-value" style="color: var(--success)">${utils.formatPrice(signal.levels.tp3, decimals)}</span>
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+
+                <div class="detail-section">
+                    <h3>Factor Analysis</h3>
+                    <div style="display: flex; gap: 1rem; justify-content: center;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 2rem; color: var(--success);">${signal.bullishCount}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Bullish</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2rem; color: var(--danger);">${signal.bearishCount}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Bearish</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2rem; color: var(--text-secondary);">${signal.totalFactors - signal.bullishCount - signal.bearishCount}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Neutral</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            DOM.signalModal.classList.add('active');
+        },
+
+        renderHistory() {
+            if (state.history.length === 0) {
+                DOM.historyList.innerHTML = `
+                    <div class="history-empty">
+                        <p>No signal history yet</p>
+                        <p style="font-size: 0.8rem;">Signals will appear here when direction changes</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const historyHtml = state.history
+                .slice(0, 50)
+                .map(item => {
+                    const decimals = utils.getDecimals(item.symbol);
+                    return `
+                        <div class="history-item ${item.direction.toLowerCase()}">
+                            <span class="history-time">${utils.formatDateTime(new Date(item.timestamp))}</span>
+                            <span class="history-symbol">${item.name}</span>
+                            <span class="history-signal ${item.direction.toLowerCase()}">${item.direction}</span>
+                            <span class="history-price">${utils.formatPrice(item.price, decimals)}</span>
+                        </div>
+                    `;
+                })
+                .join('');
+
+            DOM.historyList.innerHTML = historyHtml;
+        },
+
+        updateStatus() {
+            DOM.lastUpdate.textContent = state.lastUpdate 
+                ? utils.formatTime(state.lastUpdate) 
+                : '--:--:--';
+
+            DOM.connectionStatus.textContent = state.isOnline ? 'Online' : 'Offline';
+            DOM.connectionStatus.className = `status-value ${state.isOnline ? 'online' : 'offline'}`;
+        },
+
+        showLoading() {
+            DOM.loadingOverlay.classList.remove('hidden');
+        },
+
+        hideLoading() {
+            DOM.loadingOverlay.classList.add('hidden');
+        },
+
+        startCountdown() {
+            if (state.countdownTimer) {
+                clearInterval(state.countdownTimer);
+            }
+
+            state.nextRefresh = Date.now() + state.settings.refreshInterval;
+
+            state.countdownTimer = setInterval(() => {
+                const remaining = Math.max(0, state.nextRefresh - Date.now());
+                const minutes = Math.floor(remaining / 60000);
+                const seconds = Math.floor((remaining % 60000) / 1000);
+                DOM.nextRefresh.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+                if (remaining <= 0) {
+                    clearInterval(state.countdownTimer);
+                }
+            }, 1000);
+        }
+    };
+
+    // ==========================================
+    // HISTORY MANAGER
+    // ==========================================
+
+    // ==========================================
+    // NOTIFICATION MANAGER
+    // ==========================================
+    const NotificationManager = {
+        async init() {
+            if ('Notification' in window) {
+                state.notificationPermission = Notification.permission;
+            } else {
+                state.notificationPermission = 'unsupported';
+            }
+            this.updatePermissionUI();
+            this.loadPreviousSignals();
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.addEventListener('message', (event) => {
+                    if (event.data && event.data.type === 'NOTIFICATION_CLICK') {
+                        this.handleNotificationClick(event.data.payload);
+                    }
+                });
+            }
+        },
+
+        async requestPermission() {
+            if (!('Notification' in window)) return 'unsupported';
+            try {
+                const permission = await Notification.requestPermission();
+                state.notificationPermission = permission;
+                state.settings.notificationsEnabled = (permission === 'granted');
+                SettingsManager.save();
+                this.updatePermissionUI();
+                if (permission === 'granted') this.showTestNotification();
+                return permission;
+            } catch (error) {
+                console.error('Error requesting notification permission:', error);
+                return 'denied';
+            }
+        },
+
+        showTestNotification() {
+            this.show({
+                title: 'HWR Futures Pro',
+                body: 'Notifications enabled! You will receive trading alerts.',
+                icon: '/icons/icon-192.png',
+                tag: 'test-notification',
+                type: 'info'
+            });
+        },
+
+        updatePermissionUI() {
+            const bellBtn = document.getElementById('notificationBtn');
+            const permissionStatus = document.getElementById('notificationPermissionStatus');
+            const enableBtn = document.getElementById('enableNotificationsBtn');
+            const notificationToggles = document.querySelectorAll('.notification-toggle');
+
+            if (bellBtn) {
+                bellBtn.classList.remove('granted', 'denied', 'default');
+                bellBtn.classList.add(state.notificationPermission);
+                const icon = bellBtn.querySelector('.icon');
+                if (icon) {
+                    icon.textContent = (state.notificationPermission === 'granted' && state.settings.notificationsEnabled) ? '🔔' : '🔕';
+                }
+            }
+
+            if (permissionStatus) {
+                const statusMap = {
+                    'granted': { text: 'Enabled', class: 'status-granted' },
+                    'denied': { text: 'Blocked', class: 'status-denied' },
+                    'default': { text: 'Not Set', class: 'status-default' },
+                    'unsupported': { text: 'Not Supported', class: 'status-denied' }
+                };
+                const status = statusMap[state.notificationPermission] || statusMap['default'];
+                permissionStatus.textContent = status.text;
+                permissionStatus.className = 'permission-status ' + status.class;
+            }
+
+            if (enableBtn) {
+                if (state.notificationPermission === 'granted') {
+                    enableBtn.textContent = 'Notifications Enabled';
+                    enableBtn.disabled = true;
+                    enableBtn.classList.add('enabled');
+                } else if (state.notificationPermission === 'denied') {
+                    enableBtn.textContent = 'Blocked (Check Browser Settings)';
+                    enableBtn.disabled = true;
+                    enableBtn.classList.add('blocked');
+                } else {
+                    enableBtn.textContent = 'Enable Notifications';
+                    enableBtn.disabled = false;
+                    enableBtn.classList.remove('enabled', 'blocked');
+                }
+            }
+            notificationToggles.forEach(toggle => {
+                toggle.disabled = state.notificationPermission !== 'granted';
+            });
+        },
+
+        async show(options) {
+            if (!state.settings.notificationsEnabled || state.notificationPermission !== 'granted') return;
+            const { title, body, icon, tag, type, data } = options;
+            if (state.settings.notificationSound) this.playNotificationSound(type);
+            try {
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                    const registration = await navigator.serviceWorker.ready;
+                    await registration.showNotification(title, {
+                        body,
+                        icon: icon || '/icons/icon-192.png',
+                        badge: '/icons/icon-192.png',
+                        tag: tag || 'hwr-notification',
+                        data: data || {},
+                        vibrate: state.settings.vibrationAlerts ? [200, 100, 200] : undefined,
+                        requireInteraction: type === 'direction-change' || type === 'high-confluence'
+                    });
+                } else {
+                    new Notification(title, { body, icon: icon || '/icons/icon-192.png', tag: tag || 'hwr-notification' });
+                }
+            } catch (error) {
+                console.error('Error showing notification:', error);
+            }
+        },
+
+        playNotificationSound(type) {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                switch (type) {
+                    case 'direction-change':
+                        oscillator.frequency.value = 880;
+                        gainNode.gain.value = 0.4;
+                        oscillator.start();
+                        oscillator.stop(audioContext.currentTime + 0.15);
+                        setTimeout(() => {
+                            try {
+                                const osc2 = audioContext.createOscillator();
+                                const gain2 = audioContext.createGain();
+                                osc2.connect(gain2);
+                                gain2.connect(audioContext.destination);
+                                osc2.frequency.value = 1100;
+                                gain2.gain.value = 0.4;
+                                osc2.start();
+                                osc2.stop(audioContext.currentTime + 0.15);
+                            } catch(e) {}
+                        }, 200);
+                        break;
+                    case 'high-confluence':
+                        oscillator.frequency.value = 660;
+                        oscillator.type = 'triangle';
+                        gainNode.gain.value = 0.35;
+                        oscillator.start();
+                        oscillator.stop(audioContext.currentTime + 0.3);
+                        break;
+                    case 'price-alert':
+                        oscillator.frequency.value = 440;
+                        oscillator.type = 'square';
+                        gainNode.gain.value = 0.2;
+                        oscillator.start();
+                        oscillator.stop(audioContext.currentTime + 0.1);
+                        break;
+                    default:
+                        oscillator.frequency.value = 800;
+                        gainNode.gain.value = 0.3;
+                        oscillator.start();
+                        oscillator.stop(audioContext.currentTime + 0.2);
+                }
+            } catch (e) { console.log('Audio not available'); }
+        },
+
+        savePreviousSignals() {
+            const signalSnapshot = {};
+            Object.keys(state.signals).forEach(symbol => {
+                const sig = state.signals[symbol];
+                if (sig && sig.signal) {
+                    signalSnapshot[symbol] = {
+                        direction: sig.signal.direction,
+                        confluenceScore: sig.signal.confluenceScore,
+                        price: sig.signal.price,
+                        levels: sig.signal.levels ? { ...sig.signal.levels } : null,
+                        timestamp: Date.now()
+                    };
+                }
+            });
+            state.previousSignals = signalSnapshot;
+            try { localStorage.setItem('hwr_previous_signals', JSON.stringify(signalSnapshot)); } catch (e) {}
+        },
+
+        loadPreviousSignals() {
+            try {
+                const saved = localStorage.getItem('hwr_previous_signals');
+                if (saved) state.previousSignals = JSON.parse(saved);
+            } catch (e) {}
+        },
+
+        checkSignalChanges(newSignals) {
+            if (!state.settings.notificationsEnabled || state.notificationPermission !== 'granted') {
+                this.savePreviousSignals();
+                return;
+            }
+            Object.keys(newSignals).forEach(symbol => {
+                const newSig = newSignals[symbol];
+                const prevSig = state.previousSignals[symbol];
+                if (!newSig || !newSig.signal) return;
+                const current = newSig.signal;
+                const symbolInfo = this.getSymbolInfo(symbol);
+                const displayName = symbolInfo ? `${symbolInfo.icon} ${symbolInfo.name}` : symbol;
+
+                if (state.settings.notifyDirectionChange && prevSig) {
+                    if (prevSig.direction !== current.direction && current.direction !== 'NEUTRAL' && prevSig.direction !== 'NEUTRAL') {
+                        this.show({
+                            title: `🔄 Direction Change: ${displayName}`,
+                            body: `${prevSig.direction} → ${current.direction} @ ${utils.formatPrice(current.price, 2)}
+Confluence: ${current.confluenceScore}/${current.totalFactors || 6}`,
+                            tag: `direction-${symbol}`,
+                            type: 'direction-change',
+                            data: { symbol, type: 'direction-change' }
+                        });
+                    }
+                }
+
+                if (state.settings.notifyHighConfluence) {
+                    const threshold = state.settings.highConfluenceThreshold || 5;
+                    const wasHighConfluence = prevSig && prevSig.confluenceScore >= threshold;
+                    const isHighConfluence = current.confluenceScore >= threshold;
+                    if (isHighConfluence && !wasHighConfluence && current.direction !== 'NEUTRAL') {
+                        this.show({
+                            title: `⭐ High Confluence: ${displayName}`,
+                            body: `${current.direction} signal with ${current.confluenceScore}/${current.totalFactors || 6} factors
+Price: ${utils.formatPrice(current.price, 2)}`,
+                            tag: `confluence-${symbol}`,
+                            type: 'high-confluence',
+                            data: { symbol, type: 'high-confluence' }
+                        });
+                    }
+                }
+
+                if (state.settings.notifyPriceAlerts && current.levels) {
+                    this.checkPriceAlerts(symbol, displayName, current);
+                }
+            });
+            this.savePreviousSignals();
+        },
+
+        checkPriceAlerts(symbol, displayName, current) {
+            if (!current.levels || current.direction === 'NEUTRAL') return;
+            const price = current.price;
+            const levels = current.levels;
+            if (!state.priceAlerts[symbol]) state.priceAlerts[symbol] = { tp1: false, tp2: false, tp3: false, sl: false };
+            const alerts = state.priceAlerts[symbol];
+            const proximityThreshold = 0.005;
+
+            if (levels.tp1 && !alerts.tp1 && Math.abs(price - levels.tp1) / levels.tp1 <= proximityThreshold) {
+                alerts.tp1 = true;
+                this.show({ title: `🎯 Approaching TP1: ${displayName}`, body: `Price ${utils.formatPrice(price, 2)} near TP1 ${utils.formatPrice(levels.tp1, 2)}`, tag: `price-tp1-${symbol}`, type: 'price-alert', data: { symbol, level: 'tp1' } });
+            }
+            if (levels.tp2 && !alerts.tp2 && Math.abs(price - levels.tp2) / levels.tp2 <= proximityThreshold) {
+                alerts.tp2 = true;
+                this.show({ title: `🎯 Approaching TP2: ${displayName}`, body: `Price ${utils.formatPrice(price, 2)} near TP2 ${utils.formatPrice(levels.tp2, 2)}`, tag: `price-tp2-${symbol}`, type: 'price-alert', data: { symbol, level: 'tp2' } });
+            }
+            if (levels.sl && !alerts.sl && Math.abs(price - levels.sl) / levels.sl <= proximityThreshold) {
+                alerts.sl = true;
+                this.show({ title: `⚠️ Approaching Stop Loss: ${displayName}`, body: `Price ${utils.formatPrice(price, 2)} near SL ${utils.formatPrice(levels.sl, 2)}`, tag: `price-sl-${symbol}`, type: 'price-alert', data: { symbol, level: 'sl' } });
+            }
+            ['tp1', 'tp2', 'sl'].forEach(level => {
+                if (levels[level] && alerts[level] && Math.abs(price - levels[level]) / levels[level] > proximityThreshold * 3) alerts[level] = false;
+            });
+        },
+
+        getSymbolInfo(symbol) {
+            const allSymbols = [...CONFIG.symbols.indices, ...CONFIG.symbols.metals, ...CONFIG.symbols.energy, ...CONFIG.symbols.currencies, ...CONFIG.symbols.treasuries, ...CONFIG.symbols.grains, ...CONFIG.symbols.livestock];
+            return allSymbols.find(s => s.symbol === symbol);
+        },
+
+        handleNotificationClick(data) {
+            if (data && data.symbol) {
+                const card = document.querySelector(`.signal-card[data-symbol="${data.symbol}"]`);
+                if (card) card.click();
+            }
+        }
+    };
+
+    const HistoryManager = {
+        previousSignals: {},
+
+        checkForChanges(newSignals) {
+            Object.entries(newSignals).forEach(([symbol, item]) => {
+                const prevDirection = this.previousSignals[symbol];
+                const newDirection = item.signal.direction;
+
+                if (prevDirection && prevDirection !== newDirection && newDirection !== 'NEUTRAL') {
+                    this.addToHistory(item);
+                    this.notifyUser(item);
+                }
+
+                this.previousSignals[symbol] = newDirection;
+            });
+        },
+
+        addToHistory(item) {
+            state.history.unshift({
+                symbol: item.symbol,
+                name: item.name,
+                direction: item.signal.direction,
+                price: item.signal.price,
+                confluenceScore: item.signal.confluenceScore,
+                timestamp: new Date().toISOString()
+            });
+
+            // Keep only last 100 entries
+            if (state.history.length > 100) {
+                state.history = state.history.slice(0, 100);
+            }
+
+            this.saveHistory();
+            UI.renderHistory();
+        },
+
+        notifyUser(item) {
+            // Sound alert
+            if (state.settings.soundAlerts) {
+                this.playSound();
+            }
+
+            // Vibration alert
+            if (state.settings.vibrationAlerts && navigator.vibrate) {
+                navigator.vibrate([200, 100, 200]);
+            }
+        },
+
+        playSound() {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                oscillator.frequency.value = 800;
+                oscillator.type = 'sine';
+                gainNode.gain.value = 0.3;
+
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 0.2);
+            } catch (e) {
+                console.log('Audio not available');
+            }
+        },
+
+        saveHistory() {
+            try {
+                localStorage.setItem('hwr_history', JSON.stringify(state.history));
+            } catch (e) {
+                console.error('Failed to save history:', e);
+            }
+        },
+
+        loadHistory() {
+            try {
+                const saved = localStorage.getItem('hwr_history');
+                if (saved) {
+                    state.history = JSON.parse(saved);
+                }
+            } catch (e) {
+                console.error('Failed to load history:', e);
+            }
+        },
+
+        clearHistory() {
+            state.history = [];
+            localStorage.removeItem('hwr_history');
+            UI.renderHistory();
+        }
+    };
+
+    // ==========================================
+    // SETTINGS MANAGER
+    // ==========================================
+    const SettingsManager = {
+        load() {
+            try {
+                const saved = localStorage.getItem('hwr_settings');
+                if (saved) {
+                    state.settings = { ...CONFIG.defaults, ...JSON.parse(saved) };
+                }
+            } catch (e) {
+                console.error('Failed to load settings:', e);
+            }
+            this.applyToUI();
+        },
+
+        save() {
+            try {
+                localStorage.setItem('hwr_settings', JSON.stringify(state.settings));
+            } catch (e) {
+                console.error('Failed to save settings:', e);
+            }
+        },
+
+        applyToUI() {
+            document.getElementById('refreshInterval').value = state.settings.refreshInterval;
+            document.getElementById('confluenceThreshold').value = state.settings.confluenceThreshold;
+
+            // Apply notification settings to UI
+            const notifyDirection = document.getElementById('notifyDirectionChange');
+            const notifyConfluence = document.getElementById('notifyHighConfluence');
+            const notifyPrice = document.getElementById('notifyPriceAlerts');
+            const notifySound = document.getElementById('notificationSound');
+            const confluenceThresholdNotify = document.getElementById('highConfluenceThreshold');
+
+            if (notifyDirection) notifyDirection.checked = state.settings.notifyDirectionChange;
+            if (notifyConfluence) notifyConfluence.checked = state.settings.notifyHighConfluence;
+            if (notifyPrice) notifyPrice.checked = state.settings.notifyPriceAlerts;
+            if (notifySound) notifySound.checked = state.settings.notificationSound;
+            if (confluenceThresholdNotify) confluenceThresholdNotify.value = state.settings.highConfluenceThreshold;
+            document.getElementById('riskPercent').value = state.settings.riskPercent;
+            document.getElementById('soundAlerts').checked = state.settings.soundAlerts;
+            document.getElementById('vibrationAlerts').checked = state.settings.vibrationAlerts;
+        },
+
+        readFromUI() {
+            state.settings.refreshInterval = parseInt(document.getElementById('refreshInterval').value);
+            state.settings.confluenceThreshold = parseInt(document.getElementById('confluenceThreshold').value);
+            state.settings.riskPercent = parseFloat(document.getElementById('riskPercent').value);
+            state.settings.soundAlerts = document.getElementById('soundAlerts').checked;
+            state.settings.vibrationAlerts = document.getElementById('vibrationAlerts').checked;
+
+            // Read notification settings
+            const notifyDirection = document.getElementById('notifyDirectionChange');
+            const notifyConfluence = document.getElementById('notifyHighConfluence');
+            const notifyPrice = document.getElementById('notifyPriceAlerts');
+            const notifySound = document.getElementById('notificationSound');
+            const confluenceThresholdNotify = document.getElementById('highConfluenceThreshold');
+
+            if (notifyDirection) state.settings.notifyDirectionChange = notifyDirection.checked;
+            if (notifyConfluence) state.settings.notifyHighConfluence = notifyConfluence.checked;
+            if (notifyPrice) state.settings.notifyPriceAlerts = notifyPrice.checked;
+            if (notifySound) state.settings.notificationSound = notifySound.checked;
+            if (confluenceThresholdNotify) state.settings.highConfluenceThreshold = parseInt(confluenceThresholdNotify.value);
+
+            // Update notification UI
+            NotificationManager.updatePermissionUI();
+        }
+    };
+
+    // ==========================================
+    // PWA MANAGER
+    // ==========================================
+    const PWAManager = {
+        deferredPrompt: null,
+
+        init() {
+            // Handle install prompt
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                this.deferredPrompt = e;
+                DOM.installPrompt.classList.remove('hidden');
+            });
+
+            // Install button handler
+            document.getElementById('installBtn').addEventListener('click', async () => {
+                if (!this.deferredPrompt) return;
+
+                this.deferredPrompt.prompt();
+                const { outcome } = await this.deferredPrompt.userChoice;
+                console.log('Install outcome:', outcome);
+                this.deferredPrompt = null;
+                DOM.installPrompt.classList.add('hidden');
+            });
+
+            // Dismiss install prompt
+            document.getElementById('dismissInstall').addEventListener('click', () => {
+                DOM.installPrompt.classList.add('hidden');
+            });
+
+            // Handle app installed
+            window.addEventListener('appinstalled', () => {
+                console.log('App installed');
+                DOM.installPrompt.classList.add('hidden');
+            });
+        }
+    };
+
+    // ==========================================
+    // MAIN APP CONTROLLER
+    // ==========================================
+    const App = {
+        async init() {
+            console.log('HWR Futures Pro v2.0 initializing...');
+
+            // Initialize PWA
+            PWAManager.init();
+
+            // Load saved data
+            SettingsManager.load();
+            HistoryManager.loadHistory();
+            NotificationManager.init();
+
+            // Setup event listeners
+            this.setupEventListeners();
+
+            // Initial data fetch
+            await this.refreshData();
+
+            // Start auto-refresh
+            this.startAutoRefresh();
+
+            // Online/offline handling
+            window.addEventListener('online', () => {
+                state.isOnline = true;
+                UI.updateStatus();
+                this.refreshData();
+            });
+
+            window.addEventListener('offline', () => {
+                state.isOnline = false;
+                UI.updateStatus();
+            });
+
+            console.log('App initialized successfully');
+        },
+
+        setupEventListeners() {
+            // Tab navigation
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+                    btn.classList.add('active');
+                    document.getElementById(`${btn.dataset.tab}-tab`).classList.add('active');
+                });
+            });
+
+            // Refresh button
+            document.getElementById('refreshBtn').addEventListener('click', () => {
+                this.refreshData();
+            });
+
+            // Settings modal
+            document.getElementById('settingsBtn').addEventListener('click', () => {
+                DOM.settingsModal.classList.add('active');
+            });
+
+            document.getElementById('closeSettings').addEventListener('click', () => {
+                DOM.settingsModal.classList.remove('active');
+            });
+
+            document.getElementById('saveSettings').addEventListener('click', () => {
+                SettingsManager.readFromUI();
+                SettingsManager.save();
+                this.restartAutoRefresh();
+                DOM.settingsModal.classList.remove('active');
+            });
+
+            // Signal modal
+            document.getElementById('closeSignal').addEventListener('click', () => {
+                DOM.signalModal.classList.remove('active');
+            });
+
+            // Close modals on backdrop click
+            [DOM.settingsModal, DOM.signalModal].forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.classList.remove('active');
+                    }
+                });
+            });
+
+            // Clear history
+            document.getElementById('clearHistoryBtn').addEventListener('click', () => {
+                if (confirm('Clear all signal history?')) {
+                    HistoryManager.clearHistory();
+                }
+            });
+
+            // Notification button
+            const notificationBtn = document.getElementById('notificationBtn');
+            if (notificationBtn) {
+                notificationBtn.addEventListener('click', () => {
+                    if (state.notificationPermission === 'granted') {
+                        // Toggle notifications on/off
+                        state.settings.notificationsEnabled = !state.settings.notificationsEnabled;
+                        SettingsManager.save();
+                        NotificationManager.updatePermissionUI();
+                    } else if (state.notificationPermission === 'default') {
+                        // Request permission
+                        NotificationManager.requestPermission();
+                    } else {
+                        // Show message about blocked notifications
+                        alert('Notifications are blocked. Please enable them in your browser settings.');
+                    }
+                });
+            }
+
+            // Enable notifications button in settings
+            const enableNotificationsBtn = document.getElementById('enableNotificationsBtn');
+            if (enableNotificationsBtn) {
+                enableNotificationsBtn.addEventListener('click', () => {
+                    NotificationManager.requestPermission();
+                });
+            }
+        },
+
+        async refreshData() {
+            if (state.isLoading) return;
+
+            state.isLoading = true;
+            UI.showLoading();
+
+            try {
+                const signals = await DataFetcher.fetchAllSymbols();
+                state.signals = signals;
+                state.lastUpdate = new Date();
+
+                // Check for signal changes
+                HistoryManager.checkForChanges(signals);
+
+                // Check for notification-worthy changes
+                NotificationManager.checkSignalChanges(signals);
+
+                // Update UI
+                UI.renderSignals();
+                UI.renderHistory();
+                UI.updateStatus();
+                UI.startCountdown();
+
+            } catch (error) {
+                console.error('Failed to refresh data:', error);
+            } finally {
+                state.isLoading = false;
+                UI.hideLoading();
+            }
+        },
+
+        startAutoRefresh() {
+            if (state.refreshTimer) {
+                clearInterval(state.refreshTimer);
+            }
+
+            state.refreshTimer = setInterval(() => {
+                if (state.isOnline) {
+                    this.refreshData();
+                }
+            }, state.settings.refreshInterval);
+
+            UI.startCountdown();
+        },
+
+        restartAutoRefresh() {
+            this.startAutoRefresh();
+        }
+    };
+
+    // ==========================================
+    // INITIALIZE APP
+    // ==========================================
+    document.addEventListener('DOMContentLoaded', () => {
+        App.init();
     });
-    const total = wins + losses;
-    const winPct = total ? ((wins / total) * 100).toFixed(1) : '–';
-    return { wins, losses, winPct };
-}
 
-const UI = {
-
-        // Computes wins, losses, and win percentage for a symbol
+})();
