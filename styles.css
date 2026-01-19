@@ -1224,3 +1224,21 @@ body {
 #notificationBtn.granted.active {
     animation: notificationPulse 2s infinite;
 }
+
+:root.dark {
+  --bg: #181a1b;
+  --fg: #e3e3e3;
+}
+:root.dark body, :root.dark .modal, :root.dark .card, :root.dark .settings-modal {
+  background: var(--bg) !important;
+  color: var(--fg) !important;
+}
+:root.dark input, :root.dark select, :root.dark textarea {
+  background: #232526 !important;
+  color: #e3e3e3 !important;
+  border-color: #333 !important;
+}
+:root.dark .button, :root.dark button {
+  background: #232526 !important;
+  color: #e3e3e3 !important;
+}
