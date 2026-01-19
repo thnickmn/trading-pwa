@@ -87,7 +87,6 @@
     // STATE MANAGEMENT
     // ==========================================
     const state = {
-n  history: [\n    {symbol: 'ES', side: 'LONG', entryPrice: 4000, exitPrice: 4050, entryTime: '2026-01-18T10:00:00-05:00', exitTime: '2026-01-18T14:00:00-05:00'},\n    {symbol: 'NQ', side: 'SHORT', entryPrice: 15000, exitPrice: 14900, entryTime: '2026-01-18T11:00:00-05:00', exitTime: '2026-01-18T15:00:00-05:00'},\n    {symbol: 'GC', side: 'LONG', entryPrice: 2000, exitPrice: 1980, entryTime: '2026-01-18T12:00:00-05:00', exitTime: '2026-01-18T16:00:00-05:00'}\n  ],
 n  history: JSON.parse(localStorage.getItem('history')) || [\n    {symbol: 'ES', side: 'LONG', entryPrice: 4000, exitPrice: 4050, entryTime: '2026-01-18T10:00:00-05:00', exitTime: '2026-01-18T14:00:00-05:00'},\n    {symbol: 'NQ', side: 'SHORT', entryPrice: 15000, exitPrice: 14900, entryTime: '2026-01-18T11:00:00-05:00', exitTime: '2026-01-18T15:00:00-05:00'},\n    {symbol: 'GC', side: 'LONG', entryPrice: 2000, exitPrice: 1980, entryTime: '2026-01-18T12:00:00-05:00', exitTime: '2026-01-18T16:00:00-05:00'}\n  ],
         signals: {},
         history: [],
