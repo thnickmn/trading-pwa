@@ -691,7 +691,10 @@
         renderSignalCard(item) {
             const { symbol, name, description, icon, signal, data } = item;
             const decimals = utils.getDecimals(symbol);
-            const directionClass = signal.direction.toLowerCase();
+            const isActiveTrade = !!state.activeTrades[symbol];
+            // Show NEUTRAL unless there is an active trade
+            const displayDirection = isActiveTrade ? signal.direction : 'NEUTRAL';
+            const directionClass = displayDirection.toLowerCase();
 
             const confluencePercent = (signal.confluenceScore / signal.totalFactors) * 100;
             let confluenceClass = 'weak';
@@ -699,7 +702,6 @@
             else if (confluencePercent >= 50) confluenceClass = 'moderate';
 
             const stats = getSymbolStats(symbol);
-            const isActiveTrade = !!state.activeTrades[symbol];
             return `
                 <div class="signal-card ${directionClass}" data-symbol="${symbol}">
                     <div class="card-header">
@@ -713,7 +715,7 @@
                         </div>
                         <div class="badge-container">
                             ${isActiveTrade ? '<span class="active-badge">📍 ACTIVE</span>' : ''}
-                            <span class="signal-badge ${directionClass}">${signal.direction}</span>
+                            <span class="signal-badge ${directionClass}">${displayDirection}</span>
                         </div>
                     </div>
                     <div class="card-body">
