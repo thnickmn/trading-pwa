@@ -1341,3 +1341,27 @@ body {
     font-size: 0.85rem;
     color: var(--accent-primary);
 }
+
+
+/* Danger button for clear data */
+.danger-btn {
+    background: var(--danger);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    width: 100%;
+    transition: all 0.2s ease;
+}
+
+.danger-btn:hover {
+    background: #c0392b;
+    transform: scale(1.02);
+}
+
+.danger-btn:active {
+    transform: scale(0.98);
+}

@@ -119,6 +119,20 @@
         localStorage.setItem('hwr_activeTrades', JSON.stringify(state.activeTrades));
     }
 
+    // Function to clear all trading data
+    function clearAllData() {
+        if (confirm('Are you sure you want to clear all trading data? This cannot be undone.')) {
+            localStorage.removeItem('hwr_activeTrades');
+            localStorage.removeItem('hwr_previous_signals');
+            localStorage.removeItem('hwr_history');
+            state.activeTrades = {};
+            state.history = [];
+            HistoryManager.previousSignals = {};
+            alert('✅ All trading data cleared!');
+            location.reload();
+        }
+    }
+
     // Helper function to get win/loss stats for a symbol
     function getSymbolStats(symbol) {
         const trades = (state.history || []).filter(t => t.symbol === symbol);
@@ -1752,6 +1766,12 @@ Price: ${utils.formatPrice(current.price, 2)}`,
     document.addEventListener('DOMContentLoaded', () => {
         HistoryManager.init();  // Initialize previousSignals from persisted activeTrades
         App.init();
+
+        // Clear all data button
+        const clearBtn = document.getElementById('clearAllData');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', clearAllData);
+        }
     });
 
 })();
